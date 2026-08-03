@@ -14,12 +14,30 @@ def _table():
 # CONSULTAS
 # =====================================
 
-def obtener_por_id(id_otorgar: int):
+def obtener(id_sello2: int, id_constancia1: int):
     try:
         res = (
             _table()
             .select("*")
-            .eq("id_otorgar", id_otorgar)
+            .eq("id_sello2", id_sello2)
+            .eq("id_constancia1", id_constancia1)
+            .execute()
+        )
+        return res.data[0] if res.data else None
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al buscar otorgamiento: {e}"
+        )
+
+
+def obtener_por_id(id_otorga: int):
+    try:
+        res = (
+            _table()
+            .select("*")
+            .eq("id_otorga", id_otorga)
             .execute()
         )
         return res.data[0] if res.data else None
@@ -47,12 +65,12 @@ def listar():
         )
 
 
-def listar_por_usuario(id_usuario1: int):
+def listar_por_constancia(id_constancia1: int):
     try:
         res = (
             _table()
             .select("*")
-            .eq("id_usuario1", id_usuario1)
+            .eq("id_constancia1", id_constancia1)
             .execute()
         )
         return res.data
@@ -60,7 +78,7 @@ def listar_por_usuario(id_usuario1: int):
     except Exception as e:
         raise HTTPException(
             status_code=500,
-            detail=f"Error al listar otorgamientos del usuario: {e}"
+            detail=f"Error al listar otorgamientos de la constancia: {e}"
         )
 
 
@@ -74,6 +92,14 @@ def crear(datos: dict):
             raise HTTPException(
                 status_code=400,
                 detail="No se recibieron datos."
+            )
+
+        existe = obtener(datos["id_sello2"], datos["id_constancia1"])
+
+        if existe:
+            raise HTTPException(
+                status_code=409,
+                detail="Esa constancia ya otorga ese sello."
             )
 
         datos = jsonable_encoder(datos)
@@ -95,37 +121,12 @@ def crear(datos: dict):
         )
 
 
-def actualizar(id_otorgar: int, datos: dict):
-    try:
-        if not datos:
-            raise HTTPException(
-                status_code=400,
-                detail="No se recibieron datos."
-            )
-
-        datos = jsonable_encoder(datos)
-
-        res = (
-            _table()
-            .update(datos)
-            .eq("id_otorgar", id_otorgar)
-            .execute()
-        )
-        return res.data[0] if res.data else None
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error al actualizar otorgamiento: {e}"
-        )
-
-
-def eliminar(id_otorgar: int):
+def eliminar(id_otorga: int):
     try:
         res = (
             _table()
             .delete()
-            .eq("id_otorgar", id_otorgar)
+            .eq("id_otorga", id_otorga)
             .execute()
         )
         return res.data[0] if res.data else None

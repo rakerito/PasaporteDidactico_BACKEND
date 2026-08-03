@@ -77,5 +77,22 @@ class Settings(BaseSettings):
     def supabase_sello(self) -> str:
         return self.SUPABASE_SELLO
 
+    
+    # JWT settings
+    JWT_SECRET_KEY: str = "kamikazequecomekktuas"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION_MINUTES: int = 60 * 24  # 1 día
+
+    @property
+    def jwt_secret_key(self) -> str:
+        return self.JWT_SECRET_KEY
+
+    @property
+    def jwt_algorithm(self) -> str:
+        return self.JWT_ALGORITHM
+
+    @property
+    def jwt_expiration_minutes(self) -> int:
+        return self.JWT_EXPIRATION_MINUTES
 settings = Settings()
 config = settings
