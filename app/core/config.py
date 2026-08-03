@@ -15,6 +15,13 @@ class Settings(BaseSettings):
     # Supabase table / schema configuration
     SUPABASE_SCHEMA: str = "public"
     SUPABASE_USUARIO: str = "usuario"
+    SUPABASE_CURSO: str = "curso"
+    SUPABASE_TOMA: str = "toma"
+    SUPABASE_OTORGA: str = "otorga"
+    SUPABASE_REQUIERE: str = "requiere"
+    SUPABASE_CONSTANCIA: str = "constancia"
+    SUPABASE_DOCENTE: str = "docente"
+    SUPABASE_SELLO: str = "sello"
 
     @property
     def active_supabase_key(self) -> str:
@@ -41,6 +48,34 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore"
     )
+
+    @property
+    def supabase_curso(self) -> str:
+        return self.SUPABASE_CURSO
+
+    @property
+    def supabase_toma(self) -> str:
+        return self.SUPABASE_TOMA
+
+    @property
+    def supabase_otorga(self) -> str:
+        return self.SUPABASE_OTORGA
+
+    @property
+    def supabase_requiere(self) -> str:
+        return self.SUPABASE_REQUIERE
+
+    @property
+    def supabase_constancia(self) -> str:
+        return self.SUPABASE_CONSTANCIA
+
+    @property
+    def supabase_docente(self) -> str:
+        return self.SUPABASE_DOCENTE
+
+    @property
+    def supabase_sello(self) -> str:
+        return self.SUPABASE_SELLO
 
 settings = Settings()
 config = settings
