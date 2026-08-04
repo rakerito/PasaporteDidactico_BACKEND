@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.dependencias import usuario_actual
 from app.models.constancia import crearConstancia, actualizarConstancia, recuperarConstancia, soloConstancia, listaConstancia
@@ -19,7 +19,10 @@ def buscar_constancias(nombre: str, usuario: dict = Depends(usuario_actual)):
 
 @router.get("/constancias/{id_constancia}", response_model=soloConstancia, tags=["Constancias"])
 def obtener_constancia(id_constancia: int, usuario: dict = Depends(usuario_actual)):
-    return {"item": constancia_service.obtener_por_id(id_constancia)}
+    encontrado = constancia_service.obtener_por_id(id_constancia)
+    if not encontrado:
+        raise HTTPException(status_code=404, detail="Constancia no encontrada.")
+    return {"item": encontrado}
 
 
 @router.post("/constancias", response_model=recuperarConstancia, tags=["Constancias"])
@@ -29,9 +32,15 @@ def crear_constancia(datos: crearConstancia, usuario: dict = Depends(usuario_act
 
 @router.put("/constancias/{id_constancia}", response_model=recuperarConstancia, tags=["Constancias"])
 def actualizar_constancia(id_constancia: int, datos: actualizarConstancia, usuario: dict = Depends(usuario_actual)):
-    return constancia_service.actualizar(id_constancia, datos.model_dump(exclude_unset=True))
+    actualizado = constancia_service.actualizar(id_constancia, datos.model_dump(exclude_unset=True))
+    if not actualizado:
+        raise HTTPException(status_code=404, detail="Constancia no encontrada.")
+    return actualizado
 
 
 @router.delete("/constancias/{id_constancia}", tags=["Constancias"])
 def eliminar_constancia(id_constancia: int, usuario: dict = Depends(usuario_actual)):
-    return constancia_service.eliminar(id_constancia)
+    eliminado = constancia_service.eliminar(id_constancia)
+    if not eliminado:
+        raise HTTPException(status_code=404, detail="Constancia no encontrada.")
+    return eliminado
