@@ -3,16 +3,16 @@ from pydantic import BaseModel, Field
 class crearCurso(BaseModel):
     nombre: str = Field(max_length=100)
     descripcion: str = Field(max_length=300)
-    duracion: int = Field(max_digits=4)
+    duracion: int = Field(ge=0, lt=10000)
     estatus: str = Field(max_length=10)
-    id_sello1: int = Field(max_length=8)
+    id_sello1: int = Field(ge=0)
 
 class actualizarCurso(BaseModel):
     nombre: str | None = Field(default=None, max_length=100)
     descripcion: str | None = Field(default=None, max_length=300)
-    duracion: int | None = Field(default=None, max_digits=4)
+    duracion: int | None = Field(default=None, ge=0, lt=10000)
     estatus: str | None = Field(default=None, max_length=10)
-    id_sello1: int | None = Field(default=None, max_length=8)
+    id_sello1: int | None = Field(default=None, ge=0)
 
 class recuperarCurso(BaseModel):
     id_curso: int
