@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.routes import health, auth, usuario, curso, docente, sello, toma, otorga, requiere, constancia
+from app.routes import health, auth, usuario, curso, docente, sello, toma, otorga, requiere, constancia, categoria, curso_categoria
 
 router = APIRouter()
 
@@ -14,6 +14,8 @@ router.include_router(toma.router, tags=["Tomas"])
 router.include_router(otorga.router, tags=["Otorga"])
 router.include_router(requiere.router, tags=["Requiere"])
 router.include_router(constancia.router, tags=["Constancias"])
+router.include_router(categoria.router, tags=["Categorias"])
+router.include_router(curso_categoria.router, tags=["Curso-Categoria"])
 
 @router.get("/", tags=["Root"])
 def bienvenida():

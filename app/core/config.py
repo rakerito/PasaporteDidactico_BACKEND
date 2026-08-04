@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     SUPABASE_SCHEMA: str = "public"
     SUPABASE_USUARIO: str = "usuario"
     SUPABASE_CURSO: str = "curso"
+    SUPABASE_CATEGORIA: str = "categoria"
+    SUPABASE_CURSO_CATEGORIA: str = "curso_categoria"
     SUPABASE_TOMA: str = "toma"
     SUPABASE_OTORGA: str = "otorga"
     SUPABASE_REQUIERE: str = "requiere"
@@ -23,9 +25,10 @@ class Settings(BaseSettings):
     SUPABASE_DOCENTE: str = "docente"
     SUPABASE_SELLO: str = "sello"
 
+    
     @property
     def active_supabase_key(self) -> str:
-        return self.SUPABASE_KEY or self.SUPABASE_PUBLISHABLE_KEY or ""
+        return self.SUPABASE_SECRET_KEY or self.SUPABASE_KEY or self.SUPABASE_PUBLISHABLE_KEY or ""
 
     @property
     def supabase_url(self) -> str:
@@ -52,6 +55,14 @@ class Settings(BaseSettings):
     @property
     def supabase_curso(self) -> str:
         return self.SUPABASE_CURSO
+
+    @property
+    def supabase_categoria(self) -> str:
+        return self.SUPABASE_CATEGORIA
+
+    @property
+    def supabase_curso_categoria(self) -> str:
+        return self.SUPABASE_CURSO_CATEGORIA
 
     @property
     def supabase_toma(self) -> str:
