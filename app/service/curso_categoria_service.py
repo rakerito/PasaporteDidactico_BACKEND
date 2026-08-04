@@ -59,3 +59,33 @@ def quitar(id_curso: int, id_categoria: int):
         return res.data[0] if res.data else None
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al quitar categoría: {e}")
+
+def categorias_de_curso_detalle(id_curso: int):
+    """
+    Regresa las categorías (con nombre) asignadas a un curso,
+    no solo los ids crudos de la tabla de unión.
+    """
+    from app.service import categoria_service
+
+    relaciones = listar_por_curso(id_curso)
+    ids_categoria = [r["id_categoria"] for r in relaciones]
+
+    if not ids_categoria:
+        return []
+
+    try:
+        sb = get_supabase()
+        res = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_categoria)
+            .select("*")
+            .in_("id_categoria", ids_categoria)
+            .execute()
+        )
+        return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al buscar categorías del curso: {e}")
+
+def cursos_de_categoria_ids(id_categoria: int) -> list[int]:
+    relaciones = listar_por_categoria(id_categoria)
+    return [r["id_curso"] for r in relaciones]

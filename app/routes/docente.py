@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencias import usuario_actual
+from app.core.dependencias import usuario_actual, solo_admin
 from app.models.docente import crearDocente, actualizarDocente, recuperarDocente, soloDocente, listaDocente
 from app.service import docente_service
 
@@ -21,12 +21,12 @@ def obtener_docente(id_docente: int, usuario: dict = Depends(usuario_actual)):
 
 
 @router.post("/docentes", response_model=recuperarDocente, tags=["Docentes"])
-def crear_docente(datos: crearDocente, usuario: dict = Depends(usuario_actual)):
+def crear_docente(datos: crearDocente, usuario: dict = Depends(solo_admin)):
     return docente_service.crear(datos.model_dump())
 
 
 @router.put("/docentes/{id_docente}", response_model=recuperarDocente, tags=["Docentes"])
-def actualizar_docente(id_docente: int, datos: actualizarDocente, usuario: dict = Depends(usuario_actual)):
+def actualizar_docente(id_docente: int, datos: actualizarDocente, usuario: dict = Depends(solo_admin)):
     actualizado = docente_service.actualizar(id_docente, datos.model_dump(exclude_unset=True))
     if not actualizado:
         raise HTTPException(status_code=404, detail="Docente no encontrado.")
@@ -34,7 +34,7 @@ def actualizar_docente(id_docente: int, datos: actualizarDocente, usuario: dict 
 
 
 @router.delete("/docentes/{id_docente}", tags=["Docentes"])
-def eliminar_docente(id_docente: int, usuario: dict = Depends(usuario_actual)):
+def eliminar_docente(id_docente: int, usuario: dict = Depends(solo_admin)):
     eliminado = docente_service.eliminar(id_docente)
     if not eliminado:
         raise HTTPException(status_code=404, detail="Docente no encontrado.")

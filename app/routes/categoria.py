@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencias import usuario_actual
+from app.core.dependencias import usuario_actual, solo_admin
 from app.models.categoria import crearCategoria, actualizarCategoria, recuperarCategoria, soloCategoria, listaCategoria
 from app.service import categoria_service
 
@@ -21,12 +21,12 @@ def obtener_categoria(id_categoria: int, usuario: dict = Depends(usuario_actual)
 
 
 @router.post("/categorias", response_model=recuperarCategoria, tags=["Categorias"])
-def crear_categoria(datos: crearCategoria, usuario: dict = Depends(usuario_actual)):
+def crear_categoria(datos: crearCategoria, usuario: dict = Depends(solo_admin)):
     return categoria_service.crear(datos.model_dump())
 
 
 @router.put("/categorias/{id_categoria}", response_model=recuperarCategoria, tags=["Categorias"])
-def actualizar_categoria(id_categoria: int, datos: actualizarCategoria, usuario: dict = Depends(usuario_actual)):
+def actualizar_categoria(id_categoria: int, datos: actualizarCategoria, usuario: dict = Depends(solo_admin)):
     actualizado = categoria_service.actualizar(id_categoria, datos.model_dump(exclude_unset=True))
     if not actualizado:
         raise HTTPException(status_code=404, detail="Categoría no encontrada.")
@@ -34,7 +34,7 @@ def actualizar_categoria(id_categoria: int, datos: actualizarCategoria, usuario:
 
 
 @router.delete("/categorias/{id_categoria}", tags=["Categorias"])
-def eliminar_categoria(id_categoria: int, usuario: dict = Depends(usuario_actual)):
+def eliminar_categoria(id_categoria: int, usuario: dict = Depends(solo_admin)):
     eliminado = categoria_service.eliminar(id_categoria)
     if not eliminado:
         raise HTTPException(status_code=404, detail="Categoría no encontrada.")

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencias import usuario_actual
+from app.core.dependencias import usuario_actual, solo_admin
 from app.models.sello import crearSello, actualizarSello, recuperarSello, soloSello, listaSello
 from app.service import sello_service
 
@@ -26,12 +26,12 @@ def obtener_sello(id_sello: int, usuario: dict = Depends(usuario_actual)):
 
 
 @router.post("/sellos", response_model=recuperarSello, tags=["Sellos"])
-def crear_sello(datos: crearSello, usuario: dict = Depends(usuario_actual)):
+def crear_sello(datos: crearSello, usuario: dict = Depends(solo_admin)):
     return sello_service.crear(datos.model_dump())
 
 
 @router.put("/sellos/{id_sello}", response_model=recuperarSello, tags=["Sellos"])
-def actualizar_sello(id_sello: int, datos: actualizarSello, usuario: dict = Depends(usuario_actual)):
+def actualizar_sello(id_sello: int, datos: actualizarSello, usuario: dict = Depends(solo_admin)):
     actualizado = sello_service.actualizar(id_sello, datos.model_dump(exclude_unset=True))
     if not actualizado:
         raise HTTPException(status_code=404, detail="Sello no encontrado.")
@@ -39,7 +39,7 @@ def actualizar_sello(id_sello: int, datos: actualizarSello, usuario: dict = Depe
 
 
 @router.delete("/sellos/{id_sello}", tags=["Sellos"])
-def eliminar_sello(id_sello: int, usuario: dict = Depends(usuario_actual)):
+def eliminar_sello(id_sello: int, usuario: dict = Depends(solo_admin)):
     eliminado = sello_service.eliminar(id_sello)
     if not eliminado:
         raise HTTPException(status_code=404, detail="Sello no encontrado.")

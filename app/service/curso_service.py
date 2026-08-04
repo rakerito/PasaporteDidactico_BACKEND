@@ -135,3 +135,25 @@ def eliminar(id_curso: int):
             status_code=500,
             detail=f"Error al eliminar curso: {e}"
         )
+
+def listar_por_categoria(id_categoria: int):
+    """
+    Regresa los cursos completos que pertenecen a una categoría dada.
+    """
+    from app.service import curso_categoria_service
+
+    ids_curso = curso_categoria_service.cursos_de_categoria_ids(id_categoria)
+
+    if not ids_curso:
+        return []
+
+    try:
+        res = (
+            _table()
+            .select("*")
+            .in_("id_curso", ids_curso)
+            .execute()
+        )
+        return res.data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al buscar cursos por categoría: {e}")

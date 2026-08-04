@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
-from app.core.dependencias import usuario_actual
+from app.core.dependencias import usuario_actual, solo_admin
 from app.models.curso import crearCurso, actualizarCurso, recuperarCurso, soloCurso, listaCurso
-from app.service import curso_service
+from app.service import curso_service, curso_categoria_service
 
 router = APIRouter()
 
@@ -17,21 +17,40 @@ def buscar_cursos(nombre: str, usuario: dict = Depends(usuario_actual)):
     return {"items": curso_service.buscar(nombre)}
 
 
+@router.get("/cursos/categoria/{id_categoria}", tags=["Cursos"])
+def buscar_cursos_por_categoria(id_categoria: int, usuario: dict = Depends(usuario_actual)):
+    return {"items": curso_service.listar_por_categoria(id_categoria)}
+
+
 @router.get("/cursos/{id_curso}", response_model=soloCurso, tags=["Cursos"])
 def obtener_curso(id_curso: int, usuario: dict = Depends(usuario_actual)):
-    return {"item": curso_service.obtener_por_id(id_curso)}
+    encontrado = curso_service.obtener_por_id(id_curso)
+    if not encontrado:
+        raise HTTPException(status_code=404, detail="Curso no encontrado.")
+    return {"item": encontrado}
+
+
+@router.get("/cursos/{id_curso}/categorias", tags=["Cursos"])
+def obtener_categorias_del_curso(id_curso: int, usuario: dict = Depends(usuario_actual)):
+    return {"items": curso_categoria_service.categorias_de_curso_detalle(id_curso)}
 
 
 @router.post("/cursos", response_model=recuperarCurso, tags=["Cursos"])
-def crear_curso(datos: crearCurso, usuario: dict = Depends(usuario_actual)):
+def crear_curso(datos: crearCurso, usuario: dict = Depends(solo_admin)):
     return curso_service.crear(datos.model_dump())
 
 
 @router.put("/cursos/{id_curso}", response_model=recuperarCurso, tags=["Cursos"])
-def actualizar_curso(id_curso: int, datos: actualizarCurso, usuario: dict = Depends(usuario_actual)):
-    return curso_service.actualizar(id_curso, datos.model_dump(exclude_unset=True))
+def actualizar_curso(id_curso: int, datos: actualizarCurso, usuario: dict = Depends(solo_admin)):
+    actualizado = curso_service.actualizar(id_curso, datos.model_dump(exclude_unset=True))
+    if not actualizado:
+        raise HTTPException(status_code=404, detail="Curso no encontrado.")
+    return actualizado
 
 
 @router.delete("/cursos/{id_curso}", tags=["Cursos"])
-def eliminar_curso(id_curso: int, usuario: dict = Depends(usuario_actual)):
-    return curso_service.eliminar(id_curso)
+def eliminar_curso(id_curso: int, usuario: dict = Depends(solo_admin)):
+    eliminado = curso_service.eliminar(id_curso)
+    if not eliminado:
+        raise HTTPException(status_code=404, detail="Curso no encontrado.")
+    return eliminado
