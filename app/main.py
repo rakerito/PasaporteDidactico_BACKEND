@@ -5,7 +5,7 @@ from app.routes import rutas
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="Backend API para la aplicación móvil Flutter de Pasaporte Didáctico con integración a Supabase."
+    description="Backend API para la aplicación móvil Flutter de Pasaporte Didáctico"
 )
 
 # Configuración de Middleware CORS para permitir peticiones desde la app Flutter
