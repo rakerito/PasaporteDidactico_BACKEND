@@ -54,3 +54,8 @@ def eliminar_curso(id_curso: int, usuario: dict = Depends(solo_admin)):
     if not eliminado:
         raise HTTPException(status_code=404, detail="Curso no encontrado.")
     return eliminado
+
+@router.get("/cursos/{id_curso}/microcursos", response_model=listaCurso, tags=["Cursos"])
+def obtener_microcursos(id_curso: int, usuario: dict = Depends(usuario_actual)):
+    return {"items": curso_service.listar_microcursos(id_curso)}
+ 
