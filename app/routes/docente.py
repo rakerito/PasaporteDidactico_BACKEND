@@ -39,3 +39,10 @@ def eliminar_docente(id_docente: int, usuario: dict = Depends(solo_admin)):
     if not eliminado:
         raise HTTPException(status_code=404, detail="Docente no encontrado.")
     return eliminado
+
+@router.get("/docentes/usuario/{id_usuario1}", response_model=soloDocente, tags=["Docentes"])
+def obtener_docente_por_usuario(id_usuario1: int, usuario: dict = Depends(usuario_actual)):
+    encontrado = docente_service.obtener_por_usuario(id_usuario1)
+    if not encontrado:
+        raise HTTPException(status_code=404, detail="Este usuario no tiene perfil de docente.")
+    return {"item": encontrado}
