@@ -46,3 +46,27 @@ def obtener_docente_por_usuario(id_usuario1: int, usuario: dict = Depends(usuari
     if not encontrado:
         raise HTTPException(status_code=404, detail="Este usuario no tiene perfil de docente.")
     return {"item": encontrado}
+
+@router.get("/docentes/{id_docente}/estadisticas", tags=["Docentes"])
+def obtener_estadisticas(id_docente: int, usuario: dict = Depends(usuario_actual)):
+    return docente_service.estadisticas(id_docente)
+
+from fastapi import UploadFile, File, HTTPException
+
+@router.post("/docentes/{id_docente}/foto", tags=["Docentes"])
+async def subir_foto_docente(
+    id_docente: int,
+    archivo: UploadFile = File(...),
+    usuario: dict = Depends(usuario_actual),
+):
+    docente = docente_service.obtener_por_id(id_docente)
+    if not docente:
+        raise HTTPException(status_code=404, detail="Docente no encontrado.")
+
+    es_dueño = docente["id_usuario1"] == int(usuario["sub"])
+    es_admin = (usuario.get("categoria") or "").strip().lower() == "admin"
+    if not (es_dueño or es_admin):
+        raise HTTPException(status_code=403, detail="No puedes cambiar la foto de otro docente.")
+
+    contenido = await archivo.read()
+    return docente_service.subir_foto(id_docente, contenido, archivo.filename, archivo.content_type)

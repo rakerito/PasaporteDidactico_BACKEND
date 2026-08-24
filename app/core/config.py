@@ -24,7 +24,10 @@ class Settings(BaseSettings):
     SUPABASE_CONSTANCIA: str = "constancia"
     SUPABASE_DOCENTE: str = "docente"
     SUPABASE_SELLO: str = "sello"
-
+    SUPABASE_BUCKET_FOTOS: str = "fotos-perfil"
+    SUPABASE_NOTIFICACION_PERSONAL: str = "notificacion_personal"
+    SUPABASE_NOTIFICACION_GENERAL: str = "notificacion_general"
+    SUPABASE_NOTIFICACION_GENERAL_LEIDA: str = "notificacion_general_leida"
     
     @property
     def active_supabase_key(self) -> str:
@@ -88,7 +91,22 @@ class Settings(BaseSettings):
     def supabase_sello(self) -> str:
         return self.SUPABASE_SELLO
 
+    @property
+    def supabase_notificacion_personal(self) -> str:
+        return self.SUPABASE_NOTIFICACION_PERSONAL
+
+    @property
+    def supabase_notificacion_general(self) -> str:
+        return self.SUPABASE_NOTIFICACION_GENERAL
+
+    @property
+    def supabase_notificacion_general_leida(self) -> str:
+        return self.SUPABASE_NOTIFICACION_GENERAL_LEIDA
     
+    @property
+    def supabase_bucket_fotos(self) -> str:
+        return self.SUPABASE_BUCKET_FOTOS
+        
     # JWT settings
     JWT_SECRET_KEY: str = "kamikazequecomekktuas"
     JWT_ALGORITHM: str = "HS256"
