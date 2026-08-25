@@ -9,6 +9,8 @@ class crearCurso(BaseModel):
     id_sello1: int = Field(ge=0)
     tipo: Literal["normal", "microcurso"] = "normal"
     id_curso_padre: int | None = Field(default=None, ge=0)
+    fecha_lim_default: str | None = Field(default=None)  # "YYYY-MM-DD"
+    dias_para_completar: int | None = Field(default=None, ge=1)
 
 class actualizarCurso(BaseModel):
     nombre: str | None = Field(default=None, max_length=100)
@@ -18,6 +20,8 @@ class actualizarCurso(BaseModel):
     id_sello1: int | None = Field(default=None, ge=0)
     tipo: Literal["normal", "microcurso"] | None = Field(default=None)
     id_curso_padre: int | None = Field(default=None, ge=0)
+    fecha_lim_default: str | None = Field(default=None)
+    dias_para_completar: int | None = Field(default=None, ge=1)
 
 class recuperarCurso(BaseModel):
     id_curso: int
@@ -28,6 +32,8 @@ class recuperarCurso(BaseModel):
     id_sello1: int
     tipo: str
     id_curso_padre: int | None = None
+    fecha_lim_default: str | None = None
+    dias_para_completar: int | None = None
 
 class soloCurso(BaseModel):
     item: recuperarCurso

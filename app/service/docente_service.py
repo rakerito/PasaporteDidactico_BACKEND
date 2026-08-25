@@ -508,3 +508,86 @@ def progreso(id_docente: int):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al calcular progreso: {e}")
+def progreso(id_docente: int):
+    """
+    Regresa el progreso de capacitación de un docente:
+    - cursando: tomas en progreso, con su % y fecha límite
+    - completados: tomas terminadas, con su fecha
+    - totales: cursos completados, constancias obtenidas, sellos obtenidos
+    """
+    try:
+        sb = get_supabase()
+
+        tomas = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_toma)
+            .select("*")
+            .eq("id_docente1", id_docente)
+            .execute()
+        ).data
+
+        ids_curso = [t["id_curso1"] for t in tomas if t.get("id_curso1")]
+        cursos_por_id = {}
+        if ids_curso:
+            cursos = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_curso)
+                .select("*")
+                .in_("id_curso", ids_curso)
+                .execute()
+            ).data
+            cursos_por_id = {c["id_curso"]: c for c in cursos}
+
+        cursando = []
+        completados = []
+
+        for t in tomas:
+            curso_info = cursos_por_id.get(t.get("id_curso1"), {})
+            estatus = str(t.get("estatus", "")).strip().lower()
+
+            if estatus == "completado":
+                completados.append({
+                    "id_curso": t.get("id_curso1"),
+                    "nombre": curso_info.get("nombre", ""),
+                    "fecha_completado": t.get("fecha_completado"),
+                })
+            else:
+                cursando.append({
+                    "id_curso": t.get("id_curso1"),
+                    "nombre": curso_info.get("nombre", ""),
+                    "progreso": t.get("progreso", "0"),
+                    "fecha_lim": t.get("fecha_lim"),
+                    "estado": t.get("estatus", "En progreso"),
+                })
+
+        # Reutilizamos mis_sellos() para el total de sellos obtenidos
+        sellos_info = mis_sellos(id_docente)
+        total_sellos = len(sellos_info["obtenidos"])
+
+        # Constancias obtenidas: mismas reglas que en logros_obtenidos
+        ids_sello_obtenidos = {s["id_sello"] for s in sellos_info["obtenidos"]}
+        total_constancias = 0
+        if ids_sello_obtenidos:
+            otorga = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_otorga)
+                .select("id_sello2, id_constancia1")
+                .execute()
+            ).data
+            requeridos_por_constancia = {}
+            for fila in otorga:
+                requeridos_por_constancia.setdefault(fila["id_constancia1"], set()).add(fila["id_sello2"])
+            for requeridos in requeridos_por_constancia.values():
+                if requeridos and requeridos.issubset(ids_sello_obtenidos):
+                    total_constancias += 1
+
+        return {
+            "cursando": cursando,
+            "completados": completados,
+            "total_cursos": len(completados),
+            "total_constancias": total_constancias,
+            "total_sellos": total_sellos,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el progreso: {e}")

@@ -82,3 +82,7 @@ def obtener_detalle_sello(id_docente: int, id_sello: int, usuario: dict = Depend
 @router.get("/docentes/{id_docente}/progreso", tags=["Docentes"])
 def obtener_progreso(id_docente: int, usuario: dict = Depends(usuario_actual)):
     return docente_service.progreso(id_docente)
+
+@router.get("/docentes/{id_docente}/progreso", tags=["Docentes"])
+def obtener_progreso(id_docente: int, usuario: dict = Depends(usuario_actual)):
+    return docente_service.progreso(id_docente)

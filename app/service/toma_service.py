@@ -103,6 +103,7 @@ def crear(datos: dict):
                 detail="No se recibieron datos."
             )
         datos = _con_fecha_completado(datos)
+        datos = _con_fecha_lim_calculada(datos)
         datos = jsonable_encoder(datos)
 
         res = (
