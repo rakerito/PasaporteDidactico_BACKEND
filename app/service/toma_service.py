@@ -4,7 +4,17 @@ from fastapi.encoders import jsonable_encoder
 from app.core.supabase_client import get_supabase
 from app.core.config import config
 
+from datetime import datetime, timezone
 
+def _con_fecha_completado(datos: dict) -> dict:
+    """
+    Si el estatus que se está guardando es 'Completado' (sin importar mayúsculas),
+    registra la fecha/hora actual en fecha_completado automáticamente.
+    """
+    estatus = str(datos.get("estatus", "")).strip().lower()
+    if estatus == "completado":
+        datos["fecha_completado"] = datetime.now(timezone.utc).isoformat()
+    return datos
 def _table():
     sb = get_supabase()
     return sb.schema(config.supabase_schema).table(config.supabase_toma)
@@ -92,7 +102,7 @@ def crear(datos: dict):
                 status_code=400,
                 detail="No se recibieron datos."
             )
-
+        datos = _con_fecha_completado(datos)
         datos = jsonable_encoder(datos)
 
         res = (
@@ -119,7 +129,7 @@ def actualizar(id_toma: int, datos: dict):
                 status_code=400,
                 detail="No se recibieron datos."
             )
-
+        datos = _con_fecha_completado(datos)
         datos = jsonable_encoder(datos)
 
         res = (

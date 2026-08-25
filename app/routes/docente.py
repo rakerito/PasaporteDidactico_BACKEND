@@ -70,3 +70,15 @@ async def subir_foto_docente(
 
     contenido = await archivo.read()
     return docente_service.subir_foto(id_docente, contenido, archivo.filename, archivo.content_type)
+
+@router.get("/docentes/{id_docente}/sellos", tags=["Docentes"])
+def obtener_mis_sellos(id_docente: int, usuario: dict = Depends(usuario_actual)):
+    return docente_service.mis_sellos(id_docente)
+
+@router.get("/docentes/{id_docente}/sellos/{id_sello}/detalle", tags=["Docentes"])
+def obtener_detalle_sello(id_docente: int, id_sello: int, usuario: dict = Depends(usuario_actual)):
+    return docente_service.detalle_sello(id_docente, id_sello)
+
+@router.get("/docentes/{id_docente}/progreso", tags=["Docentes"])
+def obtener_progreso(id_docente: int, usuario: dict = Depends(usuario_actual)):
+    return docente_service.progreso(id_docente)

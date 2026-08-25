@@ -257,10 +257,11 @@ def subir_foto(id_docente: int, contenido: bytes, nombre_archivo: str, content_t
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al subir la foto: {e}")
+
 def mis_sellos(id_docente: int):
     """
     Regresa los sellos del catálogo divididos en dos grupos para un docente:
-    - obtenidos: sellos que ya ganó (por cursos completados)
+    - obtenidos: sellos que ya ganó (con la fecha en que se completó el curso)
     - no_obtenidos: el resto del catálogo
     """
     try:
@@ -269,23 +270,33 @@ def mis_sellos(id_docente: int):
         tomas = (
             sb.schema(config.supabase_schema)
             .table(config.supabase_toma)
-            .select("id_curso1")
+            .select("id_curso1, fecha_completado")
             .eq("id_docente1", id_docente)
             .ilike("estatus", "completado")
             .execute()
         )
-        ids_curso = [t["id_curso1"] for t in tomas.data]
 
-        ids_sello_obtenidos = set()
+        # Fecha más reciente de finalización, por curso
+        fecha_por_curso = {}
+        for t in tomas.data:
+            fecha_por_curso[t["id_curso1"]] = t.get("fecha_completado")
+
+        ids_curso = list(fecha_por_curso.keys())
+
+        # De cada curso completado, sacamos su sello y guardamos la fecha asociada
+        fecha_por_sello = {}
         if ids_curso:
             cursos = (
                 sb.schema(config.supabase_schema)
                 .table(config.supabase_curso)
-                .select("id_sello1")
+                .select("id_curso, id_sello1")
                 .in_("id_curso", ids_curso)
                 .execute()
             )
-            ids_sello_obtenidos = {c["id_sello1"] for c in cursos.data if c.get("id_sello1")}
+            for c in cursos.data:
+                id_sello = c.get("id_sello1")
+                if id_sello:
+                    fecha_por_sello[id_sello] = fecha_por_curso.get(c["id_curso"])
 
         todos_los_sellos = (
             sb.schema(config.supabase_schema)
@@ -294,10 +305,206 @@ def mis_sellos(id_docente: int):
             .execute()
         ).data
 
-        obtenidos = [s for s in todos_los_sellos if s["id_sello"] in ids_sello_obtenidos]
-        no_obtenidos = [s for s in todos_los_sellos if s["id_sello"] not in ids_sello_obtenidos]
+        obtenidos = []
+        no_obtenidos = []
+        for s in todos_los_sellos:
+            if s["id_sello"] in fecha_por_sello:
+                s["fecha_completado"] = fecha_por_sello[s["id_sello"]]
+                obtenidos.append(s)
+            else:
+                no_obtenidos.append(s)
 
         return {"obtenidos": obtenidos, "no_obtenidos": no_obtenidos}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener los sellos del docente: {e}")
+
+def detalle_sello(id_docente: int, id_sello: int):
+    """
+    Trae toda la info para el modal de un sello:
+    - el sello en sí (con si el docente lo tiene y cuándo)
+    - la constancia a la que contribuye (si aplica)
+    - todos los sellos que esa constancia requiere (para mostrarlos como "cursos requeridos")
+    """
+    try:
+        sb = get_supabase()
+
+        sello_res = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_sello)
+            .select("*")
+            .eq("id_sello", id_sello)
+            .execute()
+        )
+        if not sello_res.data:
+            raise HTTPException(status_code=404, detail="Sello no encontrado.")
+        sello_info = sello_res.data[0]
+
+        mis = mis_sellos(id_docente)
+        ids_obtenidos = {s["id_sello"] for s in mis["obtenidos"]}
+        obtenido = id_sello in ids_obtenidos
+
+        sello_info["obtenido"] = obtenido
+        sello_info["fecha_completado"] = None
+        if obtenido:
+            for s in mis["obtenidos"]:
+                if s["id_sello"] == id_sello:
+                    sello_info["fecha_completado"] = s.get("fecha_completado")
+
+        constancia_info = None
+        sellos_requeridos = []
+
+        otorga = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_otorga)
+            .select("id_constancia1")
+            .eq("id_sello2", id_sello)
+            .execute()
+        )
+
+        if otorga.data:
+            id_constancia = otorga.data[0]["id_constancia1"]
+
+            constancia_res = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_constancia)
+                .select("*")
+                .eq("id_constancia", id_constancia)
+                .execute()
+            )
+            if constancia_res.data:
+                constancia_info = constancia_res.data[0]
+
+            requeridos = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_otorga)
+                .select("id_sello2")
+                .eq("id_constancia1", id_constancia)
+                .execute()
+            )
+            ids_requeridos = [r["id_sello2"] for r in requeridos.data]
+
+            if ids_requeridos:
+                sellos_data = (
+                    sb.schema(config.supabase_schema)
+                    .table(config.supabase_sello)
+                    .select("*")
+                    .in_("id_sello", ids_requeridos)
+                    .execute()
+                )
+                for s in sellos_data.data:
+                    s["obtenido"] = s["id_sello"] in ids_obtenidos
+                    sellos_requeridos.append(s)
+
+        return {
+            "sello": sello_info,
+            "constancia": constancia_info,
+            "sellos_requeridos": sellos_requeridos,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener el detalle del sello: {e}")
+    
+def progreso(id_docente: int):
+    """
+    Retorna el resumen de progreso del docente:
+    avance_general, total_cursos, total_constancias, total_sellos,
+    cursando (tomas activas) y completados.
+    """
+    try:
+        sb = get_supabase()
+
+        tomas_res = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_toma)
+            .select("*")
+            .eq("id_docente1", id_docente)
+            .execute()
+        )
+        tomas = tomas_res.data
+
+        ids_curso = list({t["id_curso1"] for t in tomas}) if tomas else []
+        nombre_por_curso = {}
+        if ids_curso:
+            cursos_res = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_curso)
+                .select("id_curso, nombre")
+                .in_("id_curso", ids_curso)
+                .execute()
+            )
+            nombre_por_curso = {c["id_curso"]: c["nombre"] for c in cursos_res.data}
+
+        cursando = []
+        completados = []
+        ids_curso_completados = []
+
+        for t in tomas:
+            nombre = nombre_por_curso.get(t["id_curso1"], "")
+            if t.get("estatus", "").strip().lower() == "completado":
+                completados.append({
+                    "id_toma": t["id_toma"],
+                    "id_curso": t["id_curso1"],
+                    "nombre": nombre,
+                    "fecha_completado": t.get("fecha_completado"),
+                })
+                ids_curso_completados.append(t["id_curso1"])
+            else:
+                cursando.append({
+                    "id_toma": t["id_toma"],
+                    "id_curso": t["id_curso1"],
+                    "nombre": nombre,
+                    "progreso": t.get("progreso", 0),
+                    "fecha_lim": t.get("fecha_lim"),
+                    "estado": t.get("estatus", "En progreso"),
+                })
+
+        total_cursos_res = (
+            sb.schema(config.supabase_schema)
+            .table(config.supabase_curso)
+            .select("id_curso", count="exact")
+            .execute()
+        )
+        total_cursos = total_cursos_res.count if total_cursos_res.count is not None else len(total_cursos_res.data)
+        avance_general = round((len(completados) / total_cursos) * 100) if total_cursos > 0 else 0
+
+        sellos_obtenidos = 0
+        constancias_obtenidas = 0
+        if ids_curso_completados:
+            sello_por_curso = (
+                sb.schema(config.supabase_schema)
+                .table(config.supabase_curso)
+                .select("id_sello1")
+                .in_("id_curso", ids_curso_completados)
+                .execute()
+            )
+            sellos_ids = {c["id_sello1"] for c in sello_por_curso.data if c.get("id_sello1")}
+            sellos_obtenidos = len(sellos_ids)
+
+            if sellos_ids:
+                otorga = (
+                    sb.schema(config.supabase_schema)
+                    .table(config.supabase_otorga)
+                    .select("id_sello2, id_constancia1")
+                    .execute()
+                )
+                reqs: dict[int, set[int]] = {}
+                for fila in otorga.data:
+                    reqs.setdefault(fila["id_constancia1"], set()).add(fila["id_sello2"])
+                for req_set in reqs.values():
+                    if req_set and req_set.issubset(sellos_ids):
+                        constancias_obtenidas += 1
+
+        return {
+            "avance_general": avance_general,
+            "total_cursos": total_cursos,
+            "total_constancias": constancias_obtenidas,
+            "total_sellos": sellos_obtenidos,
+            "cursando": cursando,
+            "completados": completados,
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al calcular progreso: {e}")
